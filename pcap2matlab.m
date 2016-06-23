@@ -17,12 +17,12 @@ function capture = pcap2matlab(filter, decodeas_and_dissector, filename_or_inter
 %   Other platforms might be easily added in the future.
 % 
 %   Input arguments:
-%   * filter – A TShark format capture filter argument (tshark -f flag like 'net 10.10.10.4 and src port 12001') 
-%           or a display filter argument (tshark –Y flag like 'ip.src==10.10.10.4 and udp.srcport==12001')
+%   * filter - A TShark format capture filter argument (tshark -f flag like 'net 10.10.10.4 and src port 12001') 
+%           or a display filter argument (tshark -Y flag like 'ip.src==10.10.10.4 and udp.srcport==12001')
 %           depending on the selected mode of operation (i.e. capture or read). 
 %           For more information please revert to http://wiki.wireshark.org/CaptureFilters and
 %           http://wiki.wireshark.org/DisplayFilters.
-%   * decodeas_and_dissector – This input argument can be one of the following things:
+%   * decodeas_and_dissector - This input argument can be one of the following things:
 %           1.	A MATLAB structure whose field names are the requested packet field names to capture 
 %               whereas the content of each field, of this structure, comprises the byte offsets to 
 %               capture for this specific field. The content of the structure can be one of the following:
@@ -74,23 +74,23 @@ function capture = pcap2matlab(filter, decodeas_and_dissector, filename_or_inter
 %                                                       tcplength
 %                                                       tcpsrcport
 % 
-%       For more information on TShark’s decodeas and dissection fields options please refer to:
+%       For more information on TShark's decodeas and dissection fields options please refer to:
 %       http://www.wireshark.org/docs/man-pages/tshark.html
-%   * filename_or_interface – This input argument can be one of two things:
+%   * filename_or_interface - This input argument can be one of two things:
 %           1.	An integer number that identifies the network interface from which to start 
 %               capturing (TShark -i flag). Setting this input argument to an integer number will
 %               automatically set the function to work in capture mode.
 %           2.	A filename string that identifies the pcap file to read. Setting this input argument 
 %               to a filename string will automatically set the function to work in read mode.
-%   * capture_stop_criteria – Relevant for capture mode only (should not be assigned when working in
-%           read mode). Sets the capture ‘stop capturing’ criteria (TShark -a/-c flags). This input 
+%   * capture_stop_criteria - Relevant for capture mode only (should not be assigned when working in
+%           read mode). Sets the capture "stop capturing" criteria (TShark -a/-c flags). This input 
 %           argument can be one of the following things:
 %           1. A numeric number that sets the total number of packets to capture (TShark -c flag). 
 %           2. A string that identifies the capture stop criteria (TShark -a flag).
 %           3. A cell array combining a few legal capture stop criteria arguments such as 
 %               {'duration:10',100} that will stop capturing after 10 sec or 100 packets whichever 
 %               comes first. 
-%           For more information on TShark’s stop capturing criteria options please refer to:
+%           For more information on TShark's stop capturing criteria options please refer to:
 %           http://www.wireshark.org/docs/man-pages/tshark.html.
 % 
 %   Alon Geva
@@ -367,15 +367,18 @@ else % using WS defined disssector
     
     capture_template = struct();
 
+    FieldsofDissector = strrep(FieldsofDissector,'.','_');
     for idx=1:SizeofDissector,
-        p = find(FieldsofDissector{idx} == '.');
-        if ~isempty(p)
-            FieldsofDissector{idx} = [FieldsofDissector{idx}(1:p-1) FieldsofDissector{idx}(p+1:end)];
-        end
         capture_template.(FieldsofDissector{idx}) = 0; %setfield(capture,FieldsofDissector(idx),[]);
     end
     
     capture(1:n) = capture_template;
+    
+    %{
+    IDEA:
+        capture_template = containers.Map(FieldsofDissector,cell(1,SizeofDissector));   
+        capture = repmat(capture_template,[1,n]);
+    %}
     
     fid = fopen('tmp.txt');
     dstlineidx = 0;
@@ -405,6 +408,9 @@ else % using WS defined disssector
                             capture(dstlineidx).(FieldsofDissector{idx}) = 0;
                         elseif ~isempty(regexp(main_parser{1}{idx},'0x','ONCE'))
                             capture(dstlineidx).(FieldsofDissector{idx}) = hex2dec(main_parser{1}{idx}(3:end));
+                        elseif ~isempty(find(main_parser{1}{idx}==':',1)) && ...
+                            sum(main_parser{1}{idx}==':')*3+2 == numel(main_parser{1}{idx})
+                            capture(dstlineidx).(FieldsofDissector{idx}) = strrep(main_parser{1}{idx},':','');
                         else
                             capture(dstlineidx).(FieldsofDissector{idx}) = str2double(main_parser{1}{idx});
                         end
@@ -418,5 +424,3 @@ end
 % deleting the temporary k12text file
 fclose all;
 delete('tmp.txt');
-
-

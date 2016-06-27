@@ -83,6 +83,7 @@ The code that was added after release 1.03 was developed and tested on _Windows 
 ### Related projects:
 * [`sharktools`](https://github.com/armenb/sharktools) - a set of tools written in C that are built using the Wireshark sources resulting in `MEX` files. For **Mac / Linux only!**
 
-### Contributors:
-* Alon Geva (`v ? 1.03`).
-* Dev-iL (`v > 1.03`).
+### Contributors, 3rd party code, and licenses:
+* **Jake Hughey** for the included library "[Nested sort of structure arrays](http://www.mathworks.com/matlabcentral/fileexchange/28573-nested-sort-of-structure-arrays)" (BSD License).
+* **Alon Geva** (`v <= 1.03`) (BSD License).
+* **Dev-iL** (`v > 1.03`) (BSD License).

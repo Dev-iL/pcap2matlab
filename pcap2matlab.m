@@ -143,9 +143,10 @@ end
 if (capture_FLAG) % capture mode
     fprintf(['Started capturing from network interface #' int2str(filename_or_interface) ':\n']);
 %     eval(['status=' os_cmd '(''tshark -i ' int2str(filename_or_interface) capture_stop_str ' -w tmp.pcap' capture_filter_str ''');'])
-    eval(['status=system(''tshark -i ' int2str(filename_or_interface) capture_stop_str ' -w ' TMP_PCAP_PATH capture_filter_str ''');'])
+    msg = evalc(['status=system(''tshark -i ' int2str(filename_or_interface) capture_stop_str ' -w ' TMP_PCAP_PATH capture_filter_str ''');']);
 
-    assert(~status,'Capture using Tshark did not run well. Please make sure your inputs were correct.')
+    assert(~status,['Capture using Tshark did not work for the following reason: '...
+                     msg 'Please make sure your inputs were correct.']);
     read_filename = TMP_PCAP_PATH;
 else
     read_filename = filename_or_interface;
@@ -154,12 +155,12 @@ end
 if (~WSdissector_FLAG) % using MATLAB defined disssector
     fprintf('Started reading captured file:\n');
     if (capture_FLAG)
-        eval(['status=system(''tshark -r ' read_filename ' -F k12text -w ' TMP_FILE_PATH ');'])
+        msg = evalc(['status=system(''tshark -r ' read_filename ' -F k12text -w ' TMP_FILE_PATH ');']);
     else
-        eval(['status=system(''tshark -r ' read_filename ' -F k12text' read_filter_str ' -w ' TMP_FILE_PATH ');'])
+        msg = evalc(['status=system(''tshark -r ' read_filename ' -F k12text' read_filter_str ' -w ' TMP_FILE_PATH ');']);
     end
-    assert(~status,'Reading capture using Tshark did not run well. Please make sure your inputs were correct.')
-
+    assert(~status,['Reading capture using Tshark did not work for the following reason: '...
+                     msg 'Please make sure your inputs were correct.']);
 else
     usingdecodeas_FLAG = ~isempty(regexp(decodeas_and_dissector{1},'==','ONCE'));
     if usingdecodeas_FLAG
@@ -176,11 +177,16 @@ else
     end
  
     if (capture_FLAG)
-        eval(['status=system(''tshark -r ' read_filename decodeas_str ' -T fields -E separator=' separator_char  WSdissector_str ' > ' TMP_FILE_PATH ''');'])
+        msg = evalc(['status=system(''tshark -r ' read_filename decodeas_str ...
+          ' -T fields -E separator=' separator_char WSdissector_str ...
+          ' > ' TMP_FILE_PATH ''');']);
     else
-        eval(['status=system(''tshark -r ' read_filename decodeas_str ' -T fields -E separator=' separator_char  WSdissector_str  read_filter_str ' > ' TMP_FILE_PATH ''');'])
+        msg = evalc(['status=system(''tshark -r ' read_filename decodeas_str ...
+          ' -T fields -E separator=' separator_char WSdissector_str ...
+          read_filter_str ' > ' TMP_FILE_PATH ''');']);
     end
-    assert(~status,'Reading capture using Tshark did not run well. Please make sure your inputs were correct.')
+    assert(~status,['Reading capture using Tshark did not work for the following reason: ' ...
+                     msg 'Please make sure your inputs were correct.']);
 end
     
 FILEREADBLOCKSIZE = 10000; % MUST be a multiple of 5 derived from K12text file format.

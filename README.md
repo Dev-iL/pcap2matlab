@@ -75,7 +75,9 @@ The output is a MATLAB `struct` containing one row for each captured packet, whe
 
 ### Examples:
 An example of parsing a GVSP ([GigE Vision Stream Protocol](http://www.visiononline.org/vision-standards-details.cfm?type=5)) capture is shown in `pcap2matlab_example.m`.
-Before running, please make sure you have Wireshark installed and added to your PATH.
+Before running the example, please make sure that:
+  1. Wireshark v2.0.0 or above installed (for it to be able to recognize the `gvsp` protocol).
+  2. The folder containing the TShark binary (i.e. `tshark.exe`; e.g. `C:\Program Files\Wireshark`) is added to your system PATH.
 
 ### Testing environment:
 The code that was added after release 1.03 was developed and tested on _Windows 10 + MATLAB R2016a_.

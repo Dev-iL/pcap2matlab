@@ -75,6 +75,9 @@ The output is a MATLAB `struct` containing one row for each captured packet, whe
 
 ### Examples:
 An example of parsing a GVSP ([GigE Vision Stream Protocol](http://www.visiononline.org/vision-standards-details.cfm?type=5)) capture is shown in `pcap2matlab_example.m`.
+Before running the example, please make sure that:
+  1. Wireshark v2.0.0 or above installed (for it to be able to recognize the `gvsp` protocol).
+  2. The folder containing the TShark binary (i.e. `tshark.exe`; e.g. `C:\Program Files\Wireshark`) is added to your system PATH.
 
 ### Testing environment:
 The code that was added after release 1.03 was developed and tested on _Windows 10 + MATLAB R2016a_.
@@ -83,6 +86,7 @@ The code that was added after release 1.03 was developed and tested on _Windows 
 ### Related projects:
 * [`sharktools`](https://github.com/armenb/sharktools) - a set of tools written in C that are built using the Wireshark sources resulting in `MEX` files. For **Mac / Linux only!**
 
-### Contributors:
-* Alon Geva (`v ? 1.03`).
-* Dev-iL (`v > 1.03`).
+### Contributors, 3rd party code, and licenses:
+* **Jake Hughey** for the included library "[Nested sort of structure arrays](http://www.mathworks.com/matlabcentral/fileexchange/28573-nested-sort-of-structure-arrays)" (BSD License).
+* **Alon Geva** (`v <= 1.03`) (BSD License).
+* **Dev-iL** (`v > 1.03`) (BSD License).

@@ -1,4 +1,5 @@
-function capture = pcap2matlab(filter, decodeas_and_dissector, filename_or_interface, capture_stop_criteria)
+function capture = pcap2matlab(filter, decodeas_and_dissector, filename_or_interface, ...
+  capture_stop_criteria, additional_flags)
 % pcap2matlab() imports network protocol analyzer capabilties into MATLAB.
 %   
 %   capture = pcap2matlab(filter, decodeas_and_dissector,filename_or_interface, capture_stop_criteria) 
@@ -93,6 +94,7 @@ function capture = pcap2matlab(filter, decodeas_and_dissector, filename_or_inter
 %           For more information on TShark's stop capturing criteria options please refer to:
 %           http://www.wireshark.org/docs/man-pages/tshark.html.
 % 
+%   * additional_flags - Character vector to append to the tshark command.
 %   Alon Geva
 %   $Revision: 1.03 $  $Date: 25/04/2014 01:52:53 $
 
@@ -103,6 +105,10 @@ WSdissector_FLAG = iscell(decodeas_and_dissector);
 capture_FLAG = ~ischar(filename_or_interface);
 TMP_FILE_PATH = 'D:\tmp.txt';
 TMP_PCAP_PATH = 'D:\tmp.pcap';
+
+if nargin < 5
+  additional_flags = [];
+end
 
 switch OS
     case {'PCWIN','PCWIN32','PCWIN64'}
@@ -122,9 +128,9 @@ else
 end
 
 capture_stop_str = [];
-if exist('capture_stop_criteria','var')
+if nargin >= 4 && ~isempty(capture_stop_criteria)
     if iscell(capture_stop_criteria)
-        for idx=1:numel(capture_stop_criteria),
+        for idx=1:numel(capture_stop_criteria)
             if isnumeric(capture_stop_criteria{idx})
                 capture_stop_str = [capture_stop_str ' -c ' num2str(capture_stop_criteria{idx})];
             else
@@ -171,19 +177,16 @@ else
     
     FieldsofDissector = decodeas_and_dissector(1+usingdecodeas_FLAG:end);
     SizeofDissector = max(size(FieldsofDissector));
-    WSdissector_str = [];
-    for idx=1:SizeofDissector,
-        WSdissector_str = [WSdissector_str ' -e ' FieldsofDissector{idx} ' '];
-    end
+    WSdissector_str = strjoin([{''},FieldsofDissector],' -e ');
  
     if (capture_FLAG)
         msg = evalc(['status=system(''tshark -r ' read_filename decodeas_str ...
           ' -T fields -E separator=' separator_char WSdissector_str ...
-          ' > ' TMP_FILE_PATH ''');']);
+          ' ' additional_flags ' > ' TMP_FILE_PATH ''');']);
     else
         msg = evalc(['status=system(''tshark -r ' read_filename decodeas_str ...
           ' -T fields -E separator=' separator_char WSdissector_str ...
-          read_filter_str ' > ' TMP_FILE_PATH ''');']);
+          read_filter_str ' ' additional_flags ' > ' TMP_FILE_PATH ''');']);
     end
     assert(~status,['Reading capture using Tshark did not work for the following reason: ' ...
                      msg 'Please make sure your inputs were correct.']);
@@ -201,7 +204,7 @@ if (~WSdissector_FLAG) % using MATLAB struct defined disssector
     fid = fopen(TMP_FILE_PATH);
     n = 0;
     while ~feof(fid)
-        n = n + sum( fread( fid, 16384, 'char' ) == char(10) );
+        n = n + sum( fread( fid, 16384, 'char' ) == newline );
     end
     n = n / 4;
     fclose(fid);
@@ -227,7 +230,7 @@ if (~WSdissector_FLAG) % using MATLAB struct defined disssector
     capture_template.frametime = 0;
     dissector_base_FLAG = 10*ones(1,SizeofDissector); % default is decimal base dissection
 
-    for idx=1:SizeofDissector,
+    for idx=1:SizeofDissector
         capture_template.(FieldsofDissector{idx}) = 0; %setfield(capture,FieldsofDissector(idx),[]);
         if ischar(decodeas_and_dissector.(FieldsofDissector{idx}))
             dissector_base_FLAG(idx) = 16;
@@ -318,7 +321,7 @@ if (~WSdissector_FLAG) % using MATLAB struct defined disssector
         linestr = textscan(fid,'%s',FILEREADBLOCKSIZE);
 
        
-        for srclineidx = 1:5:length(linestr{1}),
+        for srclineidx = 1:5:length(linestr{1})
 
             line = linestr{1}{srclineidx+1};
             dstlineidx = dstlineidx + 1;
@@ -344,7 +347,7 @@ if (~WSdissector_FLAG) % using MATLAB struct defined disssector
 %                     packet_bytes	=	[tmp{:}];%reshape([tmp{:}],2,length(packet_tokens))';
 %             end
             
-            for idx=1:SizeofDissector,
+            for idx=1:SizeofDissector
                 switch dissector_base_FLAG(idx)
                     case {10}
                         capture(dstlineidx).(FieldsofDissector{idx}) = dissector_weights{idx,1} * packet_bytes_10(decodeas_and_dissector.(FieldsofDissector{idx}));
@@ -372,15 +375,14 @@ else % using WS defined disssector
     fid = fopen(TMP_FILE_PATH);
     n = 0;
     while ~feof(fid)
-        n = n + sum( fread( fid, 16384, 'char' ) == char(10) );
+        n = n + sum( fread( fid, 16384, 'char' ) == newline );
     end
     fclose(fid);
-
     
     capture_template = struct();
 
     FieldsofDissector = strrep(FieldsofDissector,'.','_');
-    for idx=1:SizeofDissector,
+    for idx=1:SizeofDissector
         capture_template.(FieldsofDissector{idx}) = 0; %setfield(capture,FieldsofDissector(idx),[]);
     end
     
@@ -398,18 +400,17 @@ else % using WS defined disssector
     while (~feof(fid))%~isempty(line{1})
         linestr = textscan(fid,'%s',FILEREADBLOCKSIZE,'delimiter','\n');
         
-        for srclineidx=1:length(linestr{1}),
+        for srclineidx=1:length(linestr{1})
             line = linestr{1}{srclineidx};
             dstlineidx = dstlineidx + 1;
 
             main_parser = textscan(line,'%s','delimiter',';');
             Sizeof_main_parser = size(main_parser{1},1);
             
-            for idx=1:min(SizeofDissector,Sizeof_main_parser),
+            for idx=1:min(SizeofDissector,Sizeof_main_parser)
                 switch (FieldsofDissector{idx})
                     case {'framenumber'}
-                        capture(dstlineidx).framenumber = str2double(main_parser{1}{idx});
-                        
+                        capture(dstlineidx).framenumber = str2double(main_parser{1}{idx});                        
                     case {'frametime'}
                         datetime_parser = textscan(main_parser{1}{idx},'%s');
                         capture(dstlineidx).frametime = str2double(datetime_parser{1}{4}(1:2))* 3600 + ...
@@ -423,6 +424,8 @@ else % using WS defined disssector
                         elseif ~isempty(find(main_parser{1}{idx}==':',1)) && ...
                             sum(main_parser{1}{idx}==':')*3+2 == numel(main_parser{1}{idx})
                             capture(dstlineidx).(FieldsofDissector{idx}) = strrep(main_parser{1}{idx},':','');
+                        elseif strncmp(FieldsofDissector{idx},'ip',2)
+                            capture(dstlineidx).(FieldsofDissector{idx}) = main_parser{1}{idx};
                         else
                             capture(dstlineidx).(FieldsofDissector{idx}) = str2double(main_parser{1}{idx});
                         end

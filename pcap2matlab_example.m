@@ -21,7 +21,7 @@ read_filter = 'gvsp';
 %% Capture/read:   
 if isRead
     % Read:
-    pcap_result = pcap2matlab(read_filter,   dissector, CAPTURE_FILE);
+    pcap_result = pcap2matlab(read_filter,   dissector, CAPTURE_FILE, [], '-2');
 else
     % Capture:
     pcap_result = pcap2matlab(capture_filter,dissector, 4, 700);
@@ -46,7 +46,9 @@ while flag
    packet_format = vertcat(pcap_result.gvsp_format);
    pos_starts = find(packet_format == PKT_FORMAT_LEADER);
    pos_footrs = find(packet_format == PKT_FORMAT_TRAILER);   
-   if numel(pos_starts) == numel(pos_footrs) && ...
+   if isempty(pos_starts) || isempty(pos_footrs)
+     error('No full image exists.');
+   elseif numel(pos_starts) == numel(pos_footrs) && ...
            all(pos_starts-pos_footrs<0) && numel(pcap_result) == pos_footrs(end)
        flag = false; %means we can stop now
    else
